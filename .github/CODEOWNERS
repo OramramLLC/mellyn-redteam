@@ -1,0 +1,21 @@
+# CODEOWNERS — protect the guardrails, CI, pinned core, and the evaluation harness itself.
+
+# AI coding assistant instructions and Claude Code settings
+/.agent/                        @OramramLLC
+/CLAUDE.md                      @OramramLLC
+/.cursorrules                   @OramramLLC
+/.github/copilot-instructions.md @OramramLLC
+/.claude/settings.json          @OramramLLC
+
+# CI, pinned guardrails, pre-commit, and hash-locked dependencies
+/.github/CODEOWNERS             @OramramLLC
+/.github/workflows/             @OramramLLC
+/.pre-commit-config.yaml        @OramramLLC
+/deploy/                        @OramramLLC
+/pyproject.toml                 @OramramLLC
+
+# The harness: scenarios, conformance cases, fixtures, and the public-surface contract
+/examples/                      @OramramLLC
+/scripts/                       @OramramLLC
+/tests/                         @OramramLLC
+/PUBLIC_SURFACE.md              @OramramLLC

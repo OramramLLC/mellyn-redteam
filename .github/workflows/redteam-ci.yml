@@ -1,0 +1,125 @@
+name: Mellyn Redteam CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  guardrails:
+    name: Mellyn Guardrails
+    uses: OramramLLC/mellyn-guardrails/.github/workflows/mellyn-reusable-ai-security-gate.yml@21c719e49137c4f7cd2857f073528bbb436f5a07
+    with:
+      require-pack-rules: true
+
+  lint:
+    name: Ruff Lint & Format Check
+    needs: [guardrails]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify Mellyn Guardrails passed
+        env:
+          GUARDRAILS_RESULT: ${{ needs.guardrails.result }}
+        run: |
+          if [ "$GUARDRAILS_RESULT" != "success" ]; then
+            echo "::error::Mellyn Guardrails reusable workflow did not succeed (result=$GUARDRAILS_RESULT)."
+            exit 1
+          fi
+
+      - name: Checkout candidate tree
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: candidate
+          persist-credentials: false
+
+      - name: Checkout baseline Ruff config and lint lockfile
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.base.sha || github.sha }}
+          path: baseline
+          sparse-checkout: |
+            deploy/requirements-ci-lint.lock
+            pyproject.toml
+          persist-credentials: false
+
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12"
+
+      - name: Install hash-locked Ruff
+        run: |
+          lock="baseline/deploy/requirements-ci-lint.lock"
+          if [ ! -f "$lock" ]; then lock="candidate/deploy/requirements-ci-lint.lock"; fi
+          python -m pip install --disable-pip-version-check --require-hashes --no-deps -r "$lock"
+
+      - name: Ruff (lint & format check against baseline configuration)
+        working-directory: candidate
+        run: |
+          ruff check --config ../baseline/pyproject.toml .
+          ruff format --check --config ../baseline/pyproject.toml .
+
+  redteam-and-conformance:
+    name: Redteam & Conformance (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.12", "3.14"]
+    steps:
+      - name: Checkout mellyn-redteam
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Checkout pinned OramramLLC/mellyn_security core
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: OramramLLC/mellyn_security
+          ref: 2bfbb529637d1e4a350e66325d178a45881221bb
+          path: core
+          persist-credentials: false
+
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      # Building the editable core needs setuptools. Install it from this repository's hash-locked build lock and use
+      # --no-build-isolation, so pip never downloads an unpinned, unhashed build backend.
+      - name: Install hash-locked core test dependencies, build backend, and editable core
+        run: |
+          python -m pip install --disable-pip-version-check --require-hashes --no-deps -r core/deploy/requirements-ci-tests.lock
+          python -m pip install --disable-pip-version-check --require-hashes --no-deps -r deploy/requirements-ci-build.lock
+          python -m pip install --disable-pip-version-check --no-deps --no-build-isolation -e ./core
+
+      - name: Run red-team unit & E2E suites
+        run: python -m unittest discover -s tests -v
+
+      - name: Run 25-case adversarial scorecard
+        run: python examples/adversarial_eval/run_redteam.py
+
+      - name: Run live observe red-team workflow
+        run: python examples/observe_redteam/run_observe_workflow.py --output-dir artifacts/observe
+
+      - name: Run mellyn-bench CLI
+        run: mellyn-bench --json
+
+      - name: Generate OWASP/ATLAS Control Assurance Report (fast profile)
+        if: always()
+        run: >
+          python scripts/run_conformance_report.py
+          --json-out artifacts/conformance-fast.json
+          --markdown-out artifacts/conformance-fast.md
+
+      - name: Upload control assurance artifacts
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: control-assurance-fast-py${{ matrix.python-version }}
+          path: |
+            artifacts/conformance-fast.json
+            artifacts/conformance-fast.md
+          if-no-files-found: error
