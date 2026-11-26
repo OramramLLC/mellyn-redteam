@@ -79,7 +79,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: OramramLLC/mellyn_security
-          ref: c418ccbe67368d31e32b52ffb671897a39ac1f0a
+          ref: 6e4a242c29dce4ce46d6dc0b08020c29d1c14295
           path: core
           persist-credentials: false
 
