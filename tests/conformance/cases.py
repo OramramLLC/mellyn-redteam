@@ -59,6 +59,7 @@ from tests.conformance.recorder import (
     CaseSpec,
     ControlMapping,
     EvidenceRecorder,
+    audit_event_rows,
     canonical_args_sha256,
     non_audit_verification,
     verify_audit_sink,
@@ -835,7 +836,7 @@ def _case_audit_lifecycle_correlation_and_redaction() -> CaseOutcome:
         )
 
         raw_jsonl = sink.getvalue()
-        records = [json.loads(line) for line in raw_jsonl.splitlines()]
+        records = audit_event_rows(raw_jsonl)
 
         v_allow = verify_audit_sink(
             raw_jsonl,

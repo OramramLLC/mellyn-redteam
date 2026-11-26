@@ -137,6 +137,25 @@ class CaseRecord:
     failure_detail: str | None = None
 
 
+def audit_event_rows(jsonl_text: str) -> list[Any]:
+    """
+    Parse a core audit sink into its event objects, one per non-blank line.
+
+    Since Phase 2C (`schema_version = 2`) each line is an envelope `{schema_version, seq, prev_hash, entry_hash,
+    source, event}` and the decision fields live under `event`. Older v1 gateway lines carried them at the top
+    level; those are returned as they are, so the harness still reads a core pinned before 2C.
+    """
+    rows: list[Any] = []
+    for raw in jsonl_text.splitlines():
+        if not raw.strip():
+            continue
+        obj = json.loads(raw)
+        if isinstance(obj, dict) and obj.get("schema_version") == 2 and isinstance(obj.get("event"), dict):
+            obj = obj["event"]
+        rows.append(obj)
+    return rows
+
+
 def verify_audit_sink(
     jsonl_text: str,
     *,
@@ -152,15 +171,13 @@ def verify_audit_sink(
     absence of every caller/secret canary marker across the entire sink.
     """
     marker_absent = all(marker not in jsonl_text for marker in forbidden_markers if marker)
-    lines = [line for line in jsonl_text.splitlines() if line.strip()]
     parsed_events: list[dict[str, Any]] = []
     schema_valid = True
-    for raw in lines:
-        try:
-            obj = json.loads(raw)
-        except json.JSONDecodeError:
-            schema_valid = False
-            continue
+    try:
+        rows = audit_event_rows(jsonl_text)
+    except json.JSONDecodeError:
+        rows, schema_valid = [], False
+    for obj in rows:
         if not isinstance(obj, dict) or not (REQUIRED_AUDIT_EVENT_KEYS <= obj.keys()):
             schema_valid = False
             continue
