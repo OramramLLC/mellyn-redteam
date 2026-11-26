@@ -32,26 +32,26 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from mcp_airlock.airlock.engine import compute_tool_pin, evaluate_tool_call
-from mcp_airlock.airlock.models import (
+from mellyn.airlock.engine import compute_tool_pin, evaluate_tool_call
+from mellyn.airlock.models import (
     AirlockPolicy,
     JsonRpcRequest,
     ToolDefinition,
     ToolPolicyRule,
     parse_jsonrpc_bytes,
 )
-from mcp_airlock.airlock.proxy import (
+from mellyn.airlock.proxy import (
     AAD_EXIT_CODE,
     JSONRPC_AAD_CONTAINMENT_SEVERED,
     JSONRPC_POLICY_VIOLATION,
     AirlockProxy,
 )
-from mcp_airlock.core.audit import AuditLedger
-from mcp_airlock.core.schemas import ZoneEvent
-from mcp_airlock.egress.guards import WorkspacePathGuard as AirlockWorkspacePathGuard
-from mcp_airlock.egress.scanner import scan_payload
-from mcp_airlock.ir_lab.reconstruct import reconstruct_incident
-from mellyn.egress import WorkspacePathGuard as BackendWorkspacePathGuard
+from mellyn.core.audit import AuditLedger
+from mellyn.core.schemas import ZoneEvent
+from mellyn.egress import WorkspacePathGuard as ReexportedWorkspacePathGuard
+from mellyn.egress.guards import WorkspacePathGuard as AirlockWorkspacePathGuard
+from mellyn.egress.scanner import scan_payload
+from mellyn.ir_lab.reconstruct import reconstruct_incident
 
 EVAL_DIR = Path(__file__).resolve().parent
 REPO_ROOT = EVAL_DIR.parents[1]
@@ -402,7 +402,7 @@ def _check_oversized_frame_bomb(work_dir: Path) -> AttackOutcome:
 
 def _eval_path_across_guards(ws_root: Path, candidate: str) -> tuple[bool, bool, bool]:
     ag = AirlockWorkspacePathGuard(ws_root)
-    bg = BackendWorkspacePathGuard(ws_root)
+    bg = ReexportedWorkspacePathGuard(ws_root)
     ag_ok, _ = ag.validate_path(candidate, is_write=False)
     bg_ok, _ = bg.validate_path(candidate, is_write=False)
     pol = AirlockPolicy(
@@ -429,7 +429,7 @@ def _check_path_case(work_dir: Path, case_id: str, paths: tuple[str, ...]) -> At
     return AttackOutcome(
         case_id=case_id,
         family="3. Workspace & Paths",
-        expected="DENY on airlock/backend/engine",
+        expected="DENY on guards/reexport/engine",
         observed=detail,
         passed=all_denied,
     )
@@ -572,14 +572,14 @@ def _check_trailing_char_protected_write(work_dir: Path) -> AttackOutcome:
         (
             t,
             AirlockWorkspacePathGuard(ws).validate_path(t, is_write=True)[0],
-            BackendWorkspacePathGuard(ws).validate_path(t, is_write=True)[0],
+            ReexportedWorkspacePathGuard(ws).validate_path(t, is_write=True)[0],
         )
         for t in targets
     ]
     return AttackOutcome(
         case_id="path-trailing-char-creates-protected-file",
         family="3. Workspace & Paths",
-        expected="DENY writes on airlock/backend (target absent)",
+        expected="DENY writes on guards/reexport (target absent)",
         observed="; ".join(f"{t!r}:ag={ag},bg={bg}" for t, ag, bg in results),
         passed=not any(ag or bg for _, ag, bg in results),
     )

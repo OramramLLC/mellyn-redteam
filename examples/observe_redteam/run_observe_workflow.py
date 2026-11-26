@@ -36,9 +36,9 @@ REPO_ROOT = WORKFLOW_DIR.parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from mcp_airlock.airlock.proxy import AAD_EXIT_CODE  # noqa: E402
-from mcp_airlock.core.audit import canary_present, canary_present_in_json  # noqa: E402
-from mcp_airlock.ir_lab.reconstruct import IncidentReport  # noqa: E402
+from mellyn.airlock.proxy import AAD_EXIT_CODE  # noqa: E402
+from mellyn.core.audit import canary_present, canary_present_in_json  # noqa: E402
+from mellyn.ir_lab.reconstruct import IncidentReport  # noqa: E402
 from mellyn.legacy_env import check_no_legacy_env  # noqa: E402
 
 from examples.observe_redteam.sandbox_mcp_server import SANDBOX_CANARY  # noqa: E402
