@@ -17,9 +17,9 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from mcp_airlock.airlock.models import parse_airlock_policy_toml  # noqa: E402
-from mcp_airlock.airlock.pin_cli import inspect_mcp_server  # noqa: E402
-from mcp_airlock.airlock.proxy import (  # noqa: E402
+from mellyn.airlock.models import parse_airlock_policy_toml  # noqa: E402
+from mellyn.airlock.pin_cli import inspect_mcp_server  # noqa: E402
+from mellyn.airlock.proxy import (  # noqa: E402
     AAD_EXIT_CODE,
     JSONRPC_AAD_CONTAINMENT_SEVERED,
     JSONRPC_POLICY_VIOLATION,

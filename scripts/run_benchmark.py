@@ -2,7 +2,7 @@
 """
 Invoke `mellyn-bench --json` via subprocess and validate deterministic accuracy/latency gates.
 
-Calls the installed `mellyn-bench` CLI directly rather than copying or importing `mcp_airlock.egress.bench`.
+Calls the installed `mellyn-bench` CLI directly rather than copying or importing `mellyn.egress.bench`.
 """
 
 from __future__ import annotations

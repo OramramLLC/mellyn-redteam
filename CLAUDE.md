@@ -7,7 +7,7 @@ This repository houses **Mellyn Redteam**, the standalone adversarial evaluation
 - **Observe-Mode Red-Team Workflow (`examples/observe_redteam/`)**: Multi-turn indirect prompt-injection trajectory comparing `--mode observe --record-redacted-payloads`, anti-downgrade refusal, and `--mode enforce` with CLI, JSON, and Markdown (`mellyn-ir`) outputs.
 - **Control Assurance Suite (`tests/conformance/`, `scripts/run_conformance_report.py`)**: Versioned OWASP LLM Top 10 / Agentic Top 10 / MITRE ATLAS conformance evidence recorder (`fast` runtime profile + declarative `linux-container` specs).
 - **Benchmark Wrapper (`scripts/run_benchmark.py`)**: Runs `mellyn-bench --json` via subprocess against the installed core package (`pip install -e ../V1`).
-- **Contract Documentation (`PUBLIC_SURFACE.md`)**: Enumerates every `mellyn.*` and `mcp_airlock.*` import and CLI command consumed from `OramramLLC/mellyn_security`.
+- **Contract Documentation (`PUBLIC_SURFACE.md`)**: Enumerates every `mellyn.*` import and CLI command consumed from `OramramLLC/mellyn_security`.
 
 ## Essential Commands
 On Windows, use `py` instead of `python` if `python` opens the Microsoft Store.

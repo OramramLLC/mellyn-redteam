@@ -29,7 +29,7 @@ Options:
    - Unsolicited/spoofed JSON-RPC response ID triggers `AAD_FIRE` (`exit=78`)
    - Non-finite JSON `NaN` constant rejected fail-closed
    - Oversized client single-line frame bomb blocked before `json.loads()` (`-32000`)
-3. **Workspace & Path Confinement (5 cases, across `mcp_airlock`, `mellyn`, and `engine`)**
+3. **Workspace & Path Confinement (5 cases, across `mellyn.egress.guards`, `mellyn.egress`, and `engine`)**
    - `../.env` traversal
    - Trailing dot `.env.` obfuscation
    - Windows NTFS Alternate Data Streams (`.env::$DATA`, `secret.key::$DATA`, `.env:stream`)

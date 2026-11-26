@@ -14,16 +14,16 @@ PUBLIC_SURFACE = REPO_ROOT / "PUBLIC_SURFACE.md"
 PYPROJECT = REPO_ROOT / "pyproject.toml"
 EVAL_README = REPO_ROOT / "examples" / "adversarial_eval" / "README.md"
 
-_IMPORT_ROW_RE = re.compile(r"^\|\s*`((?:mellyn|mcp_airlock)(?:\.[A-Za-z0-9_]+)*)`\s*\|\s*([^|]+)\|")
+_IMPORT_ROW_RE = re.compile(r"^\|\s*`(mellyn(?:\.[A-Za-z0-9_]+)*)`\s*\|\s*([^|]+)\|")
 _BACKTICK_RE = re.compile(r"`([A-Za-z_][A-Za-z0-9_]*)`")
 _CLI_ROW_RE = re.compile(r"^\|\s*`(mellyn(?:-[a-z]+)?)`\s*\|")
 
 
 def _is_core_module(mod: str) -> bool:
-    return mod in ("mellyn", "mcp_airlock") or mod.startswith(("mellyn.", "mcp_airlock."))
+    return mod == "mellyn" or mod.startswith("mellyn.")
 
 
-def _collect_actual_core_imports() -> dict[str, set[str]]:
+def _collect_all_imports() -> dict[str, set[str]]:
     imports: dict[str, set[str]] = collections.defaultdict(set)
     for path in sorted(REPO_ROOT.rglob("*.py")):
         rel_parts = path.relative_to(REPO_ROOT).parts
@@ -31,14 +31,17 @@ def _collect_actual_core_imports() -> dict[str, set[str]]:
             continue
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
         for node in ast.walk(tree):
-            if isinstance(node, ast.ImportFrom) and node.module and _is_core_module(node.module):
+            if isinstance(node, ast.ImportFrom) and node.module:
                 for alias in node.names:
                     imports[node.module].add(alias.name)
             elif isinstance(node, ast.Import):
                 for alias in node.names:
-                    if _is_core_module(alias.name):
-                        imports[alias.name].add(alias.name)
+                    imports[alias.name].add(alias.name)
     return dict(imports)
+
+
+def _collect_actual_core_imports() -> dict[str, set[str]]:
+    return {mod: syms for mod, syms in _collect_all_imports().items() if _is_core_module(mod)}
 
 
 def _collect_documented_core_imports() -> dict[str, set[str]]:
@@ -69,7 +72,7 @@ class TestPublicSurfaceContract(unittest.TestCase):
         self.assertEqual(
             documented,
             actual,
-            "PUBLIC_SURFACE.md import tables must match the exact `mellyn.*` / `mcp_airlock.*` AST imports.",
+            "PUBLIC_SURFACE.md import tables must match the exact `mellyn.*` AST imports.",
         )
 
     def test_all_five_core_cli_scripts_are_documented(self) -> None:
@@ -86,15 +89,22 @@ class TestPublicSurfaceContract(unittest.TestCase):
         ]
         self.assertEqual(bench_matches, [], "Do not copy bench.py into mellyn-redteam; invoke mellyn-bench CLI.")
 
-        actual = _collect_actual_core_imports()
-        forbidden_modules = (
-            "mcp_airlock." + "egress.bench",
+        all_imports = _collect_all_imports()
+        legacy_pkg = "mcp_" + "airlock"
+        forbidden_prefixes = (
+            legacy_pkg,
+            "mellyn.egress." + "bench",
             "mellyn." + "viewer_server",
             "sync_" + "agent_rules",
             "verify_" + "dependencies",
         )
-        for mod in forbidden_modules:
-            self.assertNotIn(mod, actual)
+        for prefix in forbidden_prefixes:
+            for mod in all_imports:
+                self.assertFalse(
+                    mod == prefix or mod.startswith(prefix + "."),
+                    f"Forbidden or removed import module referenced: {mod}",
+                )
+        self.assertNotIn("bench", all_imports.get("mellyn.egress", set()))
 
     def test_pyproject_declares_no_mellyn_security_or_non_registry_dependencies(self) -> None:
         raw = PYPROJECT.read_text(encoding="utf-8")

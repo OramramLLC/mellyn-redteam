@@ -10,13 +10,13 @@
 2. **Live `--mode observe` Red-Team Workflow ([`examples/observe_redteam/`](examples/observe_redteam/README.md))** — End-to-end indirect prompt-injection kill-chain executed through `mellyn-airlock` and reconstructed with `mellyn-ir`, validating `--mode observe --record-redacted-payloads`, anti-downgrade refusal (`exit 2`), `--mode enforce` containment (`-32000` / `-32099`, `exit 78`), CLI summaries, JSON/Markdown incident reports, and zero canary leakage across all six artifacts.
 3. **OWASP & MITRE ATLAS Conformance Suite (`tests/conformance/`, [`scripts/run_conformance_report.py`](scripts/run_conformance_report.py))** — 12 `fast` runtime control cases plus 2 declarative `linux-container` specs mapped to OWASP LLM Top 10 `2025`, OWASP Agentic Top 10 `2026`, and MITRE ATLAS `5.6.0`.
 4. **Egress Scanner Benchmark Wrapper ([`scripts/run_benchmark.py`](scripts/run_benchmark.py))** — Invokes `mellyn-bench --json` via subprocess and validates precision, recall, canary recall, and latency metrics without duplicating core scanner internals.
-5. **Public Surface Contract ([`PUBLIC_SURFACE.md`](PUBLIC_SURFACE.md), [`tests/test_public_surface.py`](tests/test_public_surface.py))** — AST-enforced inventory of every `mellyn.*` and `mcp_airlock.*` import and CLI entrypoint consumed from `OramramLLC/mellyn_security`.
+5. **Public Surface Contract ([`PUBLIC_SURFACE.md`](PUBLIC_SURFACE.md), [`tests/test_public_surface.py`](tests/test_public_surface.py))** — AST-enforced inventory of every `mellyn.*` import and CLI entrypoint consumed from `OramramLLC/mellyn_security`.
 
 ---
 
 ## Local Setup
 
-Install `mellyn-security` from a local core checkout (`OramramLLC/mellyn_security` after Pass B — it is intentionally not declared in [`pyproject.toml`](pyproject.toml)):
+Install `mellyn-security` from a local core checkout (`OramramLLC/mellyn_security` under `src/mellyn/` — it is intentionally not declared in [`pyproject.toml`](pyproject.toml)):
 
 ```bash
 python -m pip install --require-hashes --no-deps -r ../V1/deploy/requirements-ci-tests.lock
@@ -63,5 +63,5 @@ pre-commit run --all-files
 
 ## Sibling Repositories
 
-- **`OramramLLC/mellyn_security`** — Core MCP runtime (`mcp_airlock` Airlock & Flight Recorder, `mellyn` Authorization Engine & Gateway, optional Docker/Squid stack).
+- **`OramramLLC/mellyn_security`** — Core MCP runtime (`mellyn.airlock`, `mellyn.core`, `mellyn.egress`, `mellyn.ir_lab`, and authorization/gateway modules under `src/mellyn/`, plus optional Docker/Squid stack).
 - **`OramramLLC/mellyn-guardrails`** — Reusable Gitleaks, Semgrep, AI instruction rules parity, and anti-slopsquatting dependency verifier pack pinned by commit SHA in [`.pre-commit-config.yaml`](.pre-commit-config.yaml) and [`.github/workflows/redteam-ci.yml`](.github/workflows/redteam-ci.yml).
